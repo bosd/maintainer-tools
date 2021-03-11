@@ -28,6 +28,7 @@ setuptools.setup(
         "pypandoc",  # for oca-gen-addon-readme to work with markdown fragments
         "ERPpeek",
         "github3.py>=1",
+        "inflection",
         "jinja2",
         "PyYAML",
         "polib",
@@ -38,6 +39,7 @@ setuptools.setup(
         "selenium",
         "twine",
         "wheel",
+        "pyppeteer",  # to generate icons with oca-gen-addon-icon
     ],
     python_requires=">=3.6",
     classifiers=[
