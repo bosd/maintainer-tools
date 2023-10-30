@@ -23,16 +23,17 @@ ICON_TYPES = ["png", "svg", "pdf"]
 COLORS = ["orange", "pink", "yellow", "gray", "teal", "blue1", "blue2", "red", "green"]
 
 SUPPORTED_SERVICE_URLS = [
-    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css",  # noqa
-    "https://cdnjs.cloudflare.com/ajax/libs/simple-line-icons/2.5.5/css/simple-line-icons.min.css",  # noqa
-    "https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic.min.css",  # noqa
-    "https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/3.0.2/iconfont/material-icons.min.css",  # noqa
-    "https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/1.35.0/iconfont/tabler-icons.min.css",  # noqa
-    "https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons.min.css",  # noqa
-    "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css",  # noqa
-    "https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css",  # noqa
-    "https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css",  # noqa
-    "https://www.experimentalenhancements.com/FontCountry/FontCountry.css",  # noqa
+    # "https://www.experimentalenhancements.com/FontCountry/FontCountry.css",  # noqa
+    # "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css",  # noqa
+    # "https://cdnjs.cloudflare.com/ajax/libs/simple-line-icons/2.5.5/css/simple-line-icons.min.css",  # noqa
+    # "https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic.min.css",  # noqa
+    # "https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/3.0.2/iconfont/material-icons.min.css",  # noqa
+    # "https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/1.35.0/iconfont/tabler-icons.min.css",  # noqa
+    # "https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons.min.css",  # noqa
+    # "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css",  # noqa
+    # "https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css",  # noqa
+    # "https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css",  # noqa
+    "icon-fonts/fontawesome-free-5.15.4-web/css/all.min.css", # relative path not allowed
 ]
 
 TEMPLATE = Template(
@@ -91,23 +92,106 @@ def _prepare_extra_icon_html(icon_extra):
         )
     return icon_extra_html
 
+pathToExtension = './my-extension'
+minimal_args = [
+    # '--autoplay-policy=user-gesture-required',
+    # '--disable-background-networking',
+    # '--disable-background-timer-throttling',
+    # '--disable-backgrounding-occluded-windows',
+    # '--disable-breakpad',
+    # '--disable-default-apps',
+    # '--disable-dev-shm-usage',
+    # '--disable-domain-reliability',
+    # '--disable-extensions',
+    # '--disable-features=AudioServiceOutOfProcess',
+    # '--disable-hang-monitor',
+    # '--disable-ipc-flooding-protection',
+    # '--disable-notifications',
+    # '--disable-offer-store-unmasked-wallet-cards',
+    # '--disable-popup-blocking',
+    # '--disable-print-preview',
+    # '--disable-prompt-on-repost',
+    # '--disable-renderer-backgrounding',
+    '--disable-setuid-sandbox',
+    # '--load-extension=./svg-screenshots-chrome',
+    # '--disable-speech-api',
+    # '--disable-sync',
+    # '--hide-scrollbars',
+    # '--ignore-gpu-blacklist',
+    # '--metrics-recording-only',
+    # '--mute-audio',
+    # '--no-default-browser-check',
+    # '--no-first-run',
+    # '--no-pings',
+    '--no-sandbox',
+    # '--no-zygote',
+    # '--password-store=basic',
+]
+
+# env = ['PYPPETEER_CHROMIUM_REVISION=1203661']
+# PYPPETEER_CHROMIUM_REVISION=1203661
+# PYPPETEER_CHROMIUM_REVISION=839947 oca-gen-addon-icon --addon-dir=. --format png --icon-set-params "fa fa-user" --icon-color yellow
+
 
 async def generate_template_screenshot(template, options, filetype):
     """Generate custom icon with chromium headless"""
     styles_filename = os.path.join(os.path.dirname(__file__), "gen_addon_icon.css")
-    browser = await launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
+    browser = await launch(headless=False, args=minimal_args, ignoreDefaultArgs=["--disable-extensions","--enable-automation"]) # , userDataDir="/tmp/data-resused"
+    page = await browser.newPage()
+    await page.goto("data:text/html,{}".format(template), {"waitUntil": 'domcontentloaded'})
+
+
+    for iconset in SUPPORTED_SERVICE_URLS:
+        fonturl = os.path.join(os.path.dirname(__file__), iconset)
+        await page.addStyleTag({"url": fonturl})
+        # await page.addStyleTag({"path": iconset})
+    await page.addStyleTag({"path": styles_filename})
+    await page.emulateMedia("screen")
+    # await page.mouse.click(0, 0, {"delay": 500})
+    await page.mouse.click(0, 0, {"delay": 20000000})
+    # script = "let icon = window.getComputedStyle(document.querySelector('body>div>span>i'),':before').getPropertyValue('content')"
+    # not working script = "let icon window.getComputedStyle(document.querySelector('body>div>span>i'), ':before')['content']"
+    #  await page.evaluate(script)
+    # more simple
+    # await page.waitForFunction('window.status === "ready"')
+    #  await page.waitForFunction("icon !== null")
+    # await watchDog
+    # print(script)
+    # print(driver.execute_script(script).strip())
+    if filetype in ["png", "jpg"]:
+        await page.screenshot(options)
+    else:
+        await page.pdf(options)
+    # await browser.close()
+
+
+# async def generate_template_screenshot(template, options, filetype):
+    """Generate custom icon with chromium headless"""
+    """
+    styles_filename = os.path.join(os.path.dirname(__file__), "gen_addon_icon.css")
+    browser = await launch(headless=False, args=["--no-sandbox", "--disable-setuid-sandbox"])
     page = await browser.newPage()
     await page.goto("data:text/html,{}".format(template))
     for url in SUPPORTED_SERVICE_URLS:
         await page.addStyleTag({"url": url})
-    await page.addStyleTag({"path": styles_filename})
+    # await page.addStyleTag({"path": styles_filename})
+    # await page.waitForXPath('//body[1]/div/span/i/@class')
+    # line above working, but does not wait long enough
+    # await page.waitForSelector('//div/span/i/@class, { visible: true, timeout: 60000 }')
+    # await page.waitForXPath('//i[@class='fc fc-nl'], { visible: true, timeout: 60000  }')
+    # await page.waitForXPath('//button[@id="loginBtn"], { visible: true, timeout: 60000 }')
+    # //i[@class="fc fc-nl"]
+    # /html/body/div/span/i
+    # /html/body/div/span/i
+    # await new Promise(r => setTimeout(r, 1000));
     await page.emulateMedia("screen")
+    await page.mouse.click(0, 0, {"delay": 1000})
     if filetype in ["png", "jpg"]:
         await page.screenshot(options)
     else:
         await page.pdf(options)
     await browser.close()
-
+"""
 
 def gen_special_addon_icon(icon_dir, icon_set_params, icon_color, icon_extra, filetype):
     """Generate icons using popular icon libraries like fontawesome, etc"""
@@ -120,8 +204,8 @@ def gen_special_addon_icon(icon_dir, icon_set_params, icon_color, icon_extra, fi
             "clip": {
                 "y": 0,
                 "x": 0,
-                "width": 128,
-                "height": 128,
+                "width": 140,
+                "height": 140,
             },
         }
     else:
@@ -129,7 +213,8 @@ def gen_special_addon_icon(icon_dir, icon_set_params, icon_color, icon_extra, fi
             "path": icon_filename,
             "width": 128,
             "height": 128,
-            "printBackground": True,
+            "printBackground": False,
+            "omitBackground": True,
             "scale": 1,
         }
     template = TEMPLATE.substitute(
